@@ -13,6 +13,10 @@ import (
 type UserUsecase interface {
 	Signup(name, email, password string) (*models.User, error)
 	Login(email, password string) (string, error)
+	BlockUser(userID uint) error
+    UnblockUser(userID uint) error
+    SuspendUser(userID uint) error
+    GetAllUsers() ([]*models.User, error)
 }
 
 type userUsecaseImpl struct {
@@ -67,4 +71,35 @@ func (u *userUsecaseImpl) Login(email, password string) (string, error) {
 	}
 
 	return token, nil
+}
+
+func (u *userUsecaseImpl) BlockUser(userID uint) error {
+    user, err := u.userRepo.GetUserByID(userID)
+    if err != nil {
+        return err
+    }
+    user.BlockedStatus = true
+    return u.userRepo.UpdateUser(user)
+}
+
+func (u *userUsecaseImpl) UnblockUser(userID uint) error {
+    user, err := u.userRepo.GetUserByID(userID)
+    if err != nil {
+        return err
+    }
+    user.BlockedStatus = false
+    return u.userRepo.UpdateUser(user)
+}
+
+func (u *userUsecaseImpl) SuspendUser(userID uint) error {
+    user, err := u.userRepo.GetUserByID(userID)
+    if err != nil {
+        return err
+    }
+    user.InactiveStatus = true
+    return u.userRepo.UpdateUser(user)
+}
+
+func (u *userUsecaseImpl) GetAllUsers() ([]*models.User, error) {
+    return u.userRepo.GetAllUsers()
 }

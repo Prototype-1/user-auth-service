@@ -40,3 +40,58 @@ func (h *UserHandler) Login(ctx context.Context, req *proto.LoginRequest) (*prot
 		Message:      "Login successful",
 	}, nil
 }
+
+func (h *UserHandler) BlockUser(ctx context.Context, req *proto.UserRequest) (*proto.StatusResponse, error) {
+	err := h.userUsecase.BlockUser(uint(req.UserId))
+	if err != nil {
+		return nil, err
+	}
+
+	return &proto.StatusResponse{
+		Message: "User blocked successfully",
+	}, nil
+}
+
+func (h *UserHandler) UnblockUser(ctx context.Context, req *proto.UserRequest) (*proto.StatusResponse, error) {
+	err := h.userUsecase.UnblockUser(uint(req.UserId))
+	if err != nil {
+		return nil, err
+	}
+
+	return &proto.StatusResponse{
+		Message: "User unblocked successfully",
+	}, nil
+}
+
+func (h *UserHandler) SuspendUser(ctx context.Context, req *proto.UserRequest) (*proto.StatusResponse, error) {
+	err := h.userUsecase.SuspendUser(uint(req.UserId))
+	if err != nil {
+		return nil, err
+	}
+
+	return &proto.StatusResponse{
+		Message: "User suspended successfully",
+	}, nil
+}
+
+func (h *UserHandler) GetAllUsers(ctx context.Context, req *proto.Empty) (*proto.UserList, error) {
+	users, err := h.userUsecase.GetAllUsers()
+	if err != nil {
+		return nil, err
+	}
+
+	var userList []*proto.User
+	for _, u := range users {
+		userList = append(userList, &proto.User{
+			Id:             uint32(u.ID),
+			Email:          u.Email,
+			Name:           u.Name,
+			BlockedStatus:  u.BlockedStatus,
+			InactiveStatus: u.InactiveStatus,
+		})
+	}
+
+	return &proto.UserList{
+		Users: userList,
+	}, nil
+}

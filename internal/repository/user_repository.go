@@ -11,6 +11,7 @@ type UserRepository interface {
 	GetUserByEmail(email string) (*models.User, error)
 	GetUserByID(userID uint) (*models.User, error)
 	UpdateUser(user *models.User) error
+	GetAllUsers() ([]*models.User, error)
 }
 
 type userRepositoryImpl struct {
@@ -49,4 +50,12 @@ func (r *userRepositoryImpl) GetUserByID(userID uint) (*models.User, error) {
 
 func (r *userRepositoryImpl) UpdateUser(user *models.User) error {
 	return r.db.Save(user).Error
+}
+
+func (r *userRepositoryImpl) GetAllUsers() ([]*models.User, error) {
+    var users []*models.User
+    if err := r.db.Find(&users).Error; err != nil {
+        return nil, err
+    }
+    return users, nil
 }

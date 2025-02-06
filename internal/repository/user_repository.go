@@ -3,7 +3,7 @@ package repository
 import (
 	"github.com/Prototype-1/user-auth-service/internal/models"
 	"gorm.io/gorm"
-	"log"
+	"errors"
 )
 
 type UserRepository interface {
@@ -29,11 +29,14 @@ func (r *userRepositoryImpl) GetUserByEmail(email string) (*models.User, error) 
 	var user models.User
 	err := r.db.Where("email = ?", email).First(&user).Error
 	if err != nil {
-		log.Println("Error fetching user by email:", err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil 
+		}
 		return nil, err
 	}
 	return &user, nil
 }
+
 
 func (r *userRepositoryImpl) GetUserByID(userID uint) (*models.User, error) {
 	var user models.User

@@ -7,6 +7,7 @@ import (
 	"github.com/Prototype-1/user-auth-service/config"
 	"github.com/Prototype-1/user-auth-service/utils"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type UserUsecase interface {
@@ -23,26 +24,31 @@ func NewUserUsecase(userRepo repository.UserRepository) UserUsecase {
 }
 
 func (u *userUsecaseImpl) Signup(name, email, password string) (*models.User, error) {
-	existingUser, _ := u.userRepo.GetUserByEmail(email)
+	existingUser, err := u.userRepo.GetUserByEmail(email)
+	if err != nil && err != gorm.ErrRecordNotFound { 
+		return nil, errors.New("error checking existing user")
+	}
+
 	if existingUser != nil {
 		return nil, errors.New("user already exists")
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("failed to hash password")
 	}
-	user := &models.User{
+
+	newUser := &models.User{
 		Name:         name,
 		Email:        email,
 		PasswordHash: string(hashedPassword),
 	}
-	err = u.userRepo.CreateUser(user)
+	err = u.userRepo.CreateUser(newUser)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("failed to create user")
 	}
 
-	return user, nil
+	return newUser, nil
 }
 
 func (u *userUsecaseImpl) Login(email, password string) (string, error) {

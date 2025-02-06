@@ -16,7 +16,7 @@ func NewUserHandler(userUsecase usecase.UserUsecase) *UserHandler {
 }
 
 func (h *UserHandler) Signup(ctx context.Context, req *proto.SignupRequest) (*proto.AuthResponse, error) {
-	_, err := h.userUsecase.Signup(req.Name, req.Email, req.Password) 
+	_, err := h.userUsecase.Signup(req.Name, req.Email, req.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,6 @@ func (h *UserHandler) Signup(ctx context.Context, req *proto.SignupRequest) (*pr
 		Message:      "Signup successful",
 	}, nil
 }
-
 
 func (h *UserHandler) Login(ctx context.Context, req *proto.LoginRequest) (*proto.AuthResponse, error) {
 	token, err := h.userUsecase.Login(req.Email, req.Password)

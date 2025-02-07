@@ -4,18 +4,24 @@ import (
 	"context"
 	"github.com/Prototype-1/user-auth-service/internal/usecase"
 	proto "github.com/Prototype-1/user-auth-service/proto"
+	routePB "github.com/Prototype-1/user-auth-service/proto/routes"
+	"log"
+	"github.com/Prototype-1/user-auth-service/utils"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/codes"
 )
 
 type UserHandler struct {
 	proto.UnimplementedUserServiceServer
 	userUsecase usecase.UserUsecase
-	routeUsecase usecase.RouteUsecase
+	routeClient routePB.RouteServiceClient
 }
 
-func NewUserHandler(userUsecase usecase.UserUsecase, routeUsecase usecase.RouteUsecase) *UserHandler {
+func NewUserHandler(userUsecase usecase.UserUsecase, routeClient routePB.RouteServiceClient) *UserHandler {
 	return &UserHandler{
 		userUsecase: userUsecase,
-		routeUsecase: routeUsecase
+		routeClient: routeClient,
 	}
 }
 
@@ -43,6 +49,30 @@ func (h *UserHandler) Login(ctx context.Context, req *proto.LoginRequest) (*prot
 		RefreshToken: "",
 		Message:      "Login successful",
 	}, nil
+}
+
+func (s *UserHandler) authenticateUser(ctx context.Context) (uint, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return 0, status.Errorf(codes.Unauthenticated, "Missing metadata")
+	}
+
+	tokenList, exists := md["authorization"]
+	if !exists || len(tokenList) == 0 {
+		return 0, status.Errorf(codes.Unauthenticated, "Authorization token not provided")
+	}
+
+	tokenString := tokenList[0]
+	if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
+		tokenString = tokenString[7:]
+	}
+
+	userID, err := utils.ParseJWT(tokenString)
+	if err != nil {
+		return 0, status.Errorf(codes.Unauthenticated, "Invalid token: %v", err)
+	}
+
+	return userID, nil
 }
 
 func (h *UserHandler) BlockUser(ctx context.Context, req *proto.UserRequest) (*proto.StatusResponse, error) {
@@ -100,21 +130,18 @@ func (h *UserHandler) GetAllUsers(ctx context.Context, req *proto.Empty) (*proto
 	}, nil
 }
 
-func (h *UserHandler) GetAllRoutes(ctx context.Context, req *proto.Empty) (*proto.RouteList, error) {
-	routes, err := h.routeUsecase.GetAllRoutes()
+func (h *UserHandler) GetAllRoutes(ctx context.Context, req *routePB.GetAllRoutesRequest) (*routePB.GetAllRoutesResponse, error) {
+	adminID, err := h.authenticateUser(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var routeList []*proto.Route
-	for _, r := range routes {
-		routeList = append(routeList, &proto.Route{
-			Id:          uint32(r.ID),
-			Name:        r.Name,
-			Source:      r.Source,
-			Destination: r.Destination,
-		})
+	log.Printf("User ID %d is retrieving all routes", adminID)
+
+	response, err := h.routeClient.GetAllRoutes(ctx, req)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to fetch routes: %v", err)
 	}
 
-	return &proto.RouteList{Routes: routeList}, nil
+	return response, nil
 }

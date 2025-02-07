@@ -11,7 +11,7 @@ import (
 	"github.com/Prototype-1/user-auth-service/internal/handlers"
 	proto "github.com/Prototype-1/user-auth-service/proto"
 	"github.com/Prototype-1/user-auth-service/utils"
-	
+	routePB "github.com/Prototype-1/user-auth-service/proto/routes"
 	"google.golang.org/grpc"
 )
 
@@ -23,9 +23,18 @@ func main() {
 
 	utils.InitDB()
 
+	routeServiceConn, err := grpc.Dial("localhost:50053", grpc.WithInsecure()) 
+	if err != nil {
+		log.Fatalf("Failed to connect to route service: %v", err)
+	}
+	defer routeServiceConn.Close()
+
+	routeClient := routePB.NewRouteServiceClient(routeServiceConn)
+
 	userRepo := repository.NewUserRepository(utils.DB)
-	userUsecase := usecase.NewUserUsecase(userRepo)
-	userHandler := handlers.NewUserHandler(userUsecase)
+	userUsecase := usecase.NewUserUsecase(userRepo, routeClient)
+	userHandler := handlers.NewUserHandler(userUsecase, routeClient)
+
 
 	port := ":50052" 
 	listener, err := net.Listen("tcp", port)

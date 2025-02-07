@@ -8,6 +8,8 @@ import (
 	"github.com/Prototype-1/user-auth-service/utils"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	routePB "github.com/Prototype-1/user-auth-service/proto/routes"
+	"context"
 )
 
 type UserUsecase interface {
@@ -17,14 +19,20 @@ type UserUsecase interface {
     UnblockUser(userID uint) error
     SuspendUser(userID uint) error
     GetAllUsers() ([]*models.User, error)
+
+	GetAllRoutes() ([]*models.Route, error)
 }
 
 type userUsecaseImpl struct {
 	userRepo repository.UserRepository
+	routeService routePB.RouteServiceClient
 }
 
-func NewUserUsecase(userRepo repository.UserRepository) UserUsecase {
-	return &userUsecaseImpl{userRepo: userRepo}
+func NewUserUsecase(userRepo repository.UserRepository, routeClient routePB.RouteServiceClient) UserUsecase {
+	return &userUsecaseImpl{
+		userRepo: userRepo,
+		routeService: routeClient,
+	}
 }
 
 func (u *userUsecaseImpl) Signup(name, email, password string) (*models.User, error) {
@@ -102,4 +110,23 @@ func (u *userUsecaseImpl) SuspendUser(userID uint) error {
 
 func (u *userUsecaseImpl) GetAllUsers() ([]*models.User, error) {
     return u.userRepo.GetAllUsers()
+}
+
+func (u *userUsecaseImpl) GetAllRoutes() ([]*models.Route, error) {
+    res, err := u.routeService.GetAllRoutes(context.Background(), &routePB.GetAllRoutesRequest{})
+    if err != nil {
+        return nil, err
+    }
+
+    var routes []*models.Route
+    for _, r := range res.Routes {
+        routes = append(routes, &models.Route{
+            RouteID:    int(r.RouteId),
+            RouteName:  r.RouteName,
+            StartStopID: int(r.StartStopId),
+            EndStopID:   int(r.EndStopId),
+            CategoryID: int(r.CategoryId),
+        })
+    }
+    return routes, nil
 }

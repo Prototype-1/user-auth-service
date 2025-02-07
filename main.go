@@ -16,6 +16,9 @@ import (
 )
 
 func main() {
+	utils.InitLogger() 
+	utils.Log.Info("Logger initialized successfully")
+	
 	config.LoadConfig()
 
 	utils.InitDB()

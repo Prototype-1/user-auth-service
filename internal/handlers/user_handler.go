@@ -9,10 +9,14 @@ import (
 type UserHandler struct {
 	proto.UnimplementedUserServiceServer
 	userUsecase usecase.UserUsecase
+	routeUsecase usecase.RouteUsecase
 }
 
-func NewUserHandler(userUsecase usecase.UserUsecase) *UserHandler {
-	return &UserHandler{userUsecase: userUsecase}
+func NewUserHandler(userUsecase usecase.UserUsecase, routeUsecase usecase.RouteUsecase) *UserHandler {
+	return &UserHandler{
+		userUsecase: userUsecase,
+		routeUsecase: routeUsecase
+	}
 }
 
 func (h *UserHandler) Signup(ctx context.Context, req *proto.SignupRequest) (*proto.AuthResponse, error) {
@@ -94,4 +98,23 @@ func (h *UserHandler) GetAllUsers(ctx context.Context, req *proto.Empty) (*proto
 	return &proto.UserList{
 		Users: userList,
 	}, nil
+}
+
+func (h *UserHandler) GetAllRoutes(ctx context.Context, req *proto.Empty) (*proto.RouteList, error) {
+	routes, err := h.routeUsecase.GetAllRoutes()
+	if err != nil {
+		return nil, err
+	}
+
+	var routeList []*proto.Route
+	for _, r := range routes {
+		routeList = append(routeList, &proto.Route{
+			Id:          uint32(r.ID),
+			Name:        r.Name,
+			Source:      r.Source,
+			Destination: r.Destination,
+		})
+	}
+
+	return &proto.RouteList{Routes: routeList}, nil
 }

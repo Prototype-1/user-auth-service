@@ -24,10 +24,9 @@ func main() {
 	utils.InitDB()
 
 	userRepo := repository.NewUserRepository(utils.DB)
-
 	userUsecase := usecase.NewUserUsecase(userRepo)
-
 	userHandler := handlers.NewUserHandler(userUsecase)
+
 	port := ":50052" 
 	listener, err := net.Listen("tcp", port)
 	if err != nil {

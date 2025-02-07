@@ -18,7 +18,7 @@ import (
 func main() {
 	utils.InitLogger() 
 	utils.Log.Info("Logger initialized successfully")
-	
+
 	config.LoadConfig()
 
 	utils.InitDB()
@@ -37,7 +37,7 @@ func main() {
 	grpcServer := grpc.NewServer()
 	proto.RegisterUserServiceServer(grpcServer, userHandler)
 
-	fmt.Printf("gRPC Server started on %s\n", port)
+	fmt.Printf("gRPC Server started on %s...\n", port)
 
 	if err := grpcServer.Serve(listener); err != nil {
 		log.Fatalf("Failed to start gRPC server: %v", err)

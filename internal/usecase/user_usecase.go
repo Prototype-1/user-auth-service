@@ -72,14 +72,14 @@ func (u *userUsecaseImpl) Login(email, password string) (string, error) {
 	if err != nil {
 		return "", errors.New("invalid email or password")
 	}
-
-	token, err := utils.GenerateJWT(int(user.ID), string(config.JWTSecretKey))
+	token, err := utils.GenerateJWT(int(user.ID), user.Role, string(config.JWTSecretKey))
 	if err != nil {
 		return "", err
 	}
 
 	return token, nil
 }
+
 
 func (u *userUsecaseImpl) BlockUser(userID uint) error {
     user, err := u.userRepo.GetUserByID(userID)

@@ -51,15 +51,15 @@ func (h *UserHandler) Login(ctx context.Context, req *proto.LoginRequest) (*prot
 	}, nil
 }
 
-func (s *UserHandler) authenticateUser(ctx context.Context) (uint, error) {
+func (s *UserHandler) authenticateUser(ctx context.Context) (uint, string, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return 0, status.Errorf(codes.Unauthenticated, "Missing metadata")
+		return 0, "", status.Errorf(codes.Unauthenticated, "Missing metadata")
 	}
 
 	tokenList, exists := md["authorization"]
 	if !exists || len(tokenList) == 0 {
-		return 0, status.Errorf(codes.Unauthenticated, "Authorization token not provided")
+		return 0, "", status.Errorf(codes.Unauthenticated, "Authorization token not provided")
 	}
 
 	tokenString := tokenList[0]
@@ -67,12 +67,12 @@ func (s *UserHandler) authenticateUser(ctx context.Context) (uint, error) {
 		tokenString = tokenString[7:]
 	}
 
-	userID, err := utils.ParseJWT(tokenString)
+	userID, role, err := utils.ParseJWT(tokenString)
 	if err != nil {
-		return 0, status.Errorf(codes.Unauthenticated, "Invalid token: %v", err)
+		return 0, "", status.Errorf(codes.Unauthenticated, "Invalid token: %v", err)
 	}
 
-	return userID, nil
+	return userID, role, nil
 }
 
 func (h *UserHandler) BlockUser(ctx context.Context, req *proto.UserRequest) (*proto.StatusResponse, error) {
@@ -131,12 +131,12 @@ func (h *UserHandler) GetAllUsers(ctx context.Context, req *proto.Empty) (*proto
 }
 
 func (h *UserHandler) GetAllRoutes(ctx context.Context, req *routePB.GetAllRoutesRequest) (*routePB.GetAllRoutesResponse, error) {
-	adminID, err := h.authenticateUser(ctx)
+	adminID, role, err := h.authenticateUser(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Printf("User ID %d is retrieving all routes", adminID)
+	log.Printf("User ID %d (Role: %s) is retrieving all routes", adminID, role)
 
 	response, err := h.routeClient.GetAllRoutes(ctx, req)
 	if err != nil {
